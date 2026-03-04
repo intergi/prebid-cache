@@ -53,19 +53,29 @@ func NewRedisBackend(cfg config.Redis, ctx context.Context) *RedisBackend {
 		Addr:     constr,
 		Password: cfg.Password,
 		DB:       cfg.Db,
-		PoolSize:     5,
-		WriteTimeout: 1,
-		MaxActiveConns: 100,
 	}
 
 	if cfg.TLS.Enabled {
+		// https://pkg.go.dev/github.com/redis/go-redis/v9#Options
 		options = &redis.Options{
 			Addr:     constr,
 			Password: cfg.Password,
 			DB:       cfg.Db,
 			PoolSize:     5,
-			WriteTimeout: 1,
-			MaxActiveConns: 100,
+			PoolFIFO: true,
+			// ReadBufferSize: 65536,
+			// WriteBufferSize: 65536,
+			MaxRetries: 2,
+			DialerRetries: 2,
+			DialTimeout: 10 * time.Second,
+			ReadTimeout: 1 * time.Second,
+			WriteTimeout: 5 * time.Second,
+			MaxIdleConns: 10,
+			MaxActiveConns: 200,
+			ConnMaxLifetimeJitter: 1 * time.Minute,
+			ConnMaxIdleTime: 2 * time.Minute,
+			ConnMaxLifetime: 10 * time.Minute,
+			DisableIdentity: true,
 			TLSConfig: &tls.Config{
 				InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
 			},
