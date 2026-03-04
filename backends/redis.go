@@ -53,15 +53,19 @@ func NewRedisBackend(cfg config.Redis, ctx context.Context) *RedisBackend {
 		Addr:     constr,
 		Password: cfg.Password,
 		DB:       cfg.Db,
+		PoolSize:     5,
+		WriteTimeout: 1,
+		MaxActiveConns: 100,
 	}
 
 	if cfg.TLS.Enabled {
 		options = &redis.Options{
-			Addr:         constr,
-			Password:     cfg.Password,
-			DB:           cfg.Db,
+			Addr:     constr,
+			Password: cfg.Password,
+			DB:       cfg.Db,
 			PoolSize:     5,
 			WriteTimeout: 1,
+			MaxActiveConns: 100,
 			TLSConfig: &tls.Config{
 				InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
 			},
