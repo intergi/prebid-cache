@@ -5,7 +5,6 @@ go 1.26
 require (
 	github.com/aerospike/aerospike-client-go/v6 v6.16.1
 	github.com/didip/tollbooth/v6 v6.1.2
-	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gocql/gocql v1.7.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang/snappy v1.0.0
@@ -14,6 +13,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
+	github.com/redis/go-redis/v9 v9.18.0
 	github.com/rs/cors v1.11.1
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/viper v1.21.0
@@ -44,6 +44,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.51.0 // indirect

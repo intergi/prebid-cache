@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/prebid/prebid-cache/config"
 	"github.com/prebid/prebid-cache/utils"
+	"github.com/redis/go-redis/v9"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -57,9 +57,11 @@ func NewRedisBackend(cfg config.Redis, ctx context.Context) *RedisBackend {
 
 	if cfg.TLS.Enabled {
 		options = &redis.Options{
-			Addr:     constr,
-			Password: cfg.Password,
-			DB:       cfg.Db,
+			Addr:         constr,
+			Password:     cfg.Password,
+			DB:           cfg.Db,
+			PoolSize:     5,
+			WriteTimeout: 1,
 			TLSConfig: &tls.Config{
 				InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
 			},
