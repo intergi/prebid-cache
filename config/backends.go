@@ -151,12 +151,22 @@ func (cfg *Memcache) validateAndLog() error {
 }
 
 type Redis struct {
-	Host              string   `mapstructure:"host"`
-	Port              int      `mapstructure:"port"`
-	Password          string   `mapstructure:"password"`
-	Db                int      `mapstructure:"db"`
-	ExpirationMinutes int      `mapstructure:"expiration"`
-	TLS               RedisTLS `mapstructure:"tls"`
+	Host                string   `mapstructure:"host"`
+	Port                int      `mapstructure:"port"`
+	Password            string   `mapstructure:"password"`
+	Db                  int      `mapstructure:"db"`
+	ExpirationMinutes   int      `mapstructure:"expiration"`
+	TLS                 RedisTLS `mapstructure:"tls"`
+	ReadBufferSize      int      `mapstructure:"read_buffer_size"`
+	WriteBufferSize     int      `mapstructure:"write_buffer_size"`
+	PoolSize            int      `mapstructure:"pool_size"`
+	DialerRetries       int      `mapstructure:"dialer_retries"`
+	MaxRetries          int      `mapstructure:"max_retries"`
+	MaxIdleConns        int      `mapstructure:"max_idle_conns"`
+	MaxActiveConns      int      `mapstructure:"max_active_conns"`
+	DialTimeoutSeconds  int      `mapstructure:"dial_timeout_seconds"`
+	ReadTimeoutSeconds  int      `mapstructure:"read_timeout_seconds"`
+	WriteTimeoutSeconds int      `mapstructure:"write_timeout_seconds"`
 }
 
 type RedisTLS struct {
@@ -173,6 +183,16 @@ func (cfg *Redis) validateAndLog() error {
 	}
 	log.Infof("config.backend.redis.tls.enabled: %t", cfg.TLS.Enabled)
 	log.Infof("config.backend.redis.tls.insecure_skip_verify: %t", cfg.TLS.InsecureSkipVerify)
+	log.Infof("config.backend.redis.read_buffer_size: %d", cfg.ReadBufferSize)
+	log.Infof("config.backend.redis.write_buffer_size: %d", cfg.WriteBufferSize)
+	log.Infof("config.backend.redis.pool_size: %d", cfg.PoolSize)
+	log.Infof("config.backend.redis.max_retries: %d", cfg.MaxRetries)
+	log.Infof("config.backend.redis.dialer_retries: %d", cfg.DialerRetries)
+	log.Infof("config.backend.redis.max_idle_conns: %d", cfg.MaxIdleConns)
+	log.Infof("config.backend.redis.max_active_conns: %d", cfg.MaxActiveConns)
+	log.Infof("config.backend.redis.dial_timeout_seconds: %d", cfg.DialTimeoutSeconds)
+	log.Infof("config.backend.redis.read_timeout_seconds: %d", cfg.ReadTimeoutSeconds)
+	log.Infof("config.backend.redis.write_timeout_seconds: %d", cfg.WriteTimeoutSeconds)
 	return nil
 }
 

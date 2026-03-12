@@ -71,6 +71,19 @@ func setConfigDefaults(v *viper.Viper) {
 	v.SetDefault("backend.redis.expiration", utils.REDIS_DEFAULT_EXPIRATION_MINUTES)
 	v.SetDefault("backend.redis.tls.enabled", false)
 	v.SetDefault("backend.redis.tls.insecure_skip_verify", false)
+
+	// playwire custom
+	v.SetDefault("backend.redis.read_buffer_size", 262144)
+	v.SetDefault("backend.redis.write_buffer_size", 262144)
+	v.SetDefault("backend.redis.pool_size", 5)
+	v.SetDefault("backend.redis.max_retries", 2)
+	v.SetDefault("backend.redis.dialer_retries", 2)
+	v.SetDefault("backend.redis.max_idle_conns", 10)
+	v.SetDefault("backend.redis.max_active_conns", 100)
+	v.SetDefault("backend.redis.dial_timeout_seconds", 8)
+	v.SetDefault("backend.redis.read_timeout_seconds", 2)
+	v.SetDefault("backend.redis.write_timeout_seconds", 5)
+
 	v.SetDefault("backend.ignite.scheme", "")
 	v.SetDefault("backend.ignite.host", "")
 	v.SetDefault("backend.ignite.port", 0)
