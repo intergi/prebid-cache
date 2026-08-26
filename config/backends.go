@@ -151,7 +151,6 @@ func (cfg *Memcache) validateAndLog() error {
 }
 
 type Redis struct {
-	URL                 string   `mapstructure:"url"`
 	Host                string   `mapstructure:"host"`
 	Port                int      `mapstructure:"port"`
 	Password            string   `mapstructure:"password"`
@@ -168,6 +167,7 @@ type Redis struct {
 	DialTimeoutSeconds  int      `mapstructure:"dial_timeout_seconds"`
 	ReadTimeoutSeconds  int      `mapstructure:"read_timeout_seconds"`
 	WriteTimeoutSeconds int      `mapstructure:"write_timeout_seconds"`
+	URL                 string   `mapstructure:"url"`
 }
 
 type RedisTLS struct {
@@ -194,7 +194,7 @@ func (cfg *Redis) validateAndLog() error {
 	log.Infof("config.backend.redis.dial_timeout_seconds: %d", cfg.DialTimeoutSeconds)
 	log.Infof("config.backend.redis.read_timeout_seconds: %d", cfg.ReadTimeoutSeconds)
 	log.Infof("config.backend.redis.write_timeout_seconds: %d", cfg.WriteTimeoutSeconds)
-	log.Infof("config.backend.redis.url: %s", cfg.URL)
+	log.Infof("config.backend.redis.url is set: %t", cfg.URL != "")
 	return nil
 }
 

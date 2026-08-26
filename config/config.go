@@ -127,7 +127,7 @@ func setEnvVarsLookup(v *viper.Viper) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.SetEnvPrefix("PBC")
 	v.AutomaticEnv()
-	v.BindEnv("backend.redis.url", "REDIS_URL", "PBC_BACKEND_REDIS_URL")
+	v.BindEnv("backend.redis.url", "REDIS_URL")
 }
 
 type Configuration struct {

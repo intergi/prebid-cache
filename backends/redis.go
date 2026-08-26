@@ -3,6 +3,7 @@ package backends
 import (
 	"context"
 	"crypto/tls"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -45,92 +46,90 @@ type RedisBackend struct {
 	client RedisDB
 }
 
-func newRedisOptions(cfg config.Redis) (*redis.Options, error) {
-	var options *redis.Options
-	var err error
-
-	if cfg.URL != "" {
-		options, err = redis.ParseURL(cfg.URL)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		options = &redis.Options{}
-	}
-
-	if cfg.Host != "" || cfg.Port > 0 {
-		options.Addr = cfg.Host + ":" + strconv.Itoa(cfg.Port)
-	}
-	if cfg.Password != "" {
-		options.Password = cfg.Password
-	}
-	if cfg.Db != 0 {
-		options.DB = cfg.Db
-	}
-	if cfg.PoolSize > 0 {
-		options.PoolSize = cfg.PoolSize
-	}
-	if cfg.ReadBufferSize > 0 {
-		options.ReadBufferSize = cfg.ReadBufferSize
-	}
-	if cfg.WriteBufferSize > 0 {
-		options.WriteBufferSize = cfg.WriteBufferSize
-	}
-	if cfg.MaxRetries > 0 {
-		options.MaxRetries = cfg.MaxRetries
-	}
-	if cfg.DialerRetries > 0 {
-		options.DialerRetries = cfg.DialerRetries
-	}
-	if cfg.DialTimeoutSeconds > 0 {
-		options.DialTimeout = time.Duration(cfg.DialTimeoutSeconds) * time.Second
-	}
-	if cfg.ReadTimeoutSeconds > 0 {
-		options.ReadTimeout = time.Duration(cfg.ReadTimeoutSeconds) * time.Second
-	}
-	if cfg.WriteTimeoutSeconds > 0 {
-		options.WriteTimeout = time.Duration(cfg.WriteTimeoutSeconds) * time.Second
-	}
-	if cfg.MaxIdleConns > 0 {
-		options.MaxIdleConns = cfg.MaxIdleConns
-	}
-	if cfg.MaxActiveConns > 0 {
-		options.MaxActiveConns = cfg.MaxActiveConns
-	}
-
-	options.PoolFIFO = true
-	options.ConnMaxLifetimeJitter = 1 * time.Minute
-	options.ConnMaxIdleTime = 1 * time.Minute
-	options.ConnMaxLifetime = 5 * time.Minute
-	options.DisableIdentity = true
-
-	if cfg.TLS.Enabled {
-		if options.TLSConfig == nil {
-			options.TLSConfig = &tls.Config{}
-		}
-		options.TLSConfig.InsecureSkipVerify = cfg.TLS.InsecureSkipVerify
-	}
-
-	return options, nil
-}
-
 // NewRedisBackend initializes the redis client and pings to make sure connection was successful
 func NewRedisBackend(cfg config.Redis, ctx context.Context) *RedisBackend {
-	options, err := newRedisOptions(cfg)
-	if err != nil {
-		log.Fatalf("Error creating Redis backend: %v", err)
+	if cfg.URL != "" {
+		options, err := redis.ParseURL(cfg.URL)
+		if err != nil {
+			log.Fatalf("Failed to parse REDIS_URL: %v", err)
+		}
+		u, err := url.Parse(cfg.URL)
+		if err != nil {
+			log.Fatalf("Failed to parse REDIS_URL hostname/port: %v", err)
+		}
+		cfg.Host = u.Hostname()
+		cfg.Port, _ = strconv.Atoi(u.Port())
+		cfg.Password = options.Password
+		cfg.Db = options.DB
+		if options.TLSConfig != nil {
+			cfg.TLS.Enabled = true
+			// support enforcing InsecureSkipVerify true from the env var
+			if cfg.TLS.InsecureSkipVerify == false {
+				cfg.TLS.InsecureSkipVerify = options.TLSConfig.InsecureSkipVerify
+			}
+		}
+	}
+
+	constr := cfg.Host + ":" + strconv.Itoa(cfg.Port)
+
+	options := &redis.Options{
+		Addr:                  constr,
+		Password:              cfg.Password,
+		DB:                    cfg.Db,
+		PoolSize:              cfg.PoolSize,
+		PoolFIFO:              true,
+		ReadBufferSize:        cfg.ReadBufferSize,
+		WriteBufferSize:       cfg.WriteBufferSize,
+		MaxRetries:            cfg.MaxRetries,
+		DialerRetries:         cfg.DialerRetries,
+		DialTimeout:           time.Duration(cfg.DialTimeoutSeconds) * time.Second,
+		ReadTimeout:           time.Duration(cfg.ReadTimeoutSeconds) * time.Second,
+		WriteTimeout:          time.Duration(cfg.WriteTimeoutSeconds) * time.Second,
+		MaxIdleConns:          cfg.MaxIdleConns,
+		MaxActiveConns:        cfg.MaxActiveConns,
+		ConnMaxLifetimeJitter: 1 * time.Minute,
+		ConnMaxIdleTime:       1 * time.Minute,
+		ConnMaxLifetime:       5 * time.Minute,
+		DisableIdentity:       true,
+	}
+
+	if cfg.TLS.Enabled {
+		// https://pkg.go.dev/github.com/redis/go-redis/v9#Options
+		options = &redis.Options{
+			Addr:                  constr,
+			Password:              cfg.Password,
+			DB:                    cfg.Db,
+			PoolSize:              cfg.PoolSize,
+			PoolFIFO:              true,
+			ReadBufferSize:        cfg.ReadBufferSize,
+			WriteBufferSize:       cfg.WriteBufferSize,
+			MaxRetries:            cfg.MaxRetries,
+			DialerRetries:         cfg.DialerRetries,
+			DialTimeout:           time.Duration(cfg.DialTimeoutSeconds) * time.Second,
+			ReadTimeout:           time.Duration(cfg.ReadTimeoutSeconds) * time.Second,
+			WriteTimeout:          time.Duration(cfg.WriteTimeoutSeconds) * time.Second,
+			MaxIdleConns:          cfg.MaxIdleConns,
+			MaxActiveConns:        cfg.MaxActiveConns,
+			ConnMaxLifetimeJitter: 1 * time.Minute,
+			ConnMaxIdleTime:       1 * time.Minute,
+			ConnMaxLifetime:       5 * time.Minute,
+			DisableIdentity:       true,
+			TLSConfig: &tls.Config{
+				InsecureSkipVerify: cfg.TLS.InsecureSkipVerify,
+			},
+		}
 	}
 
 	redisClient := RedisDBClient{client: redis.NewClient(options)}
 
-	_, err = redisClient.client.Ping(ctx).Result()
+	_, err := redisClient.client.Ping(ctx).Result()
 
 	if err != nil {
 		log.Fatalf("Error creating Redis backend: %v", err)
 		panic("RedisBackend failure. This shouldn't happen.")
 	}
 
-	log.Infof("Connected to Redis at %s", options.Addr)
+	log.Infof("Connected to Redis at %s:%d", cfg.Host, cfg.Port)
 
 	return &RedisBackend{
 		cfg:    cfg,
