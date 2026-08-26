@@ -39,6 +39,20 @@ func TestEnvConfig(t *testing.T) {
 	assert.Equal(t, "env-var-defined-metrics-host", string(cfg.Metrics.Influx.Host), "metrics.influx.host did not equal expected")
 }
 
+func TestRedisURLEnvConfig(t *testing.T) {
+	t.Run("REDIS_URL env var", func(t *testing.T) {
+		defer setEnvVar(t, "REDIS_URL", "redis://redis-server:6379/1")()
+		cfg := NewConfig("config_non_existent")
+		assert.Equal(t, "redis://redis-server:6379/1", cfg.Backend.Redis.URL)
+	})
+
+	t.Run("PBC_BACKEND_REDIS_URL env var", func(t *testing.T) {
+		defer setEnvVar(t, "PBC_BACKEND_REDIS_URL", "redis://pbc-redis-server:6379/2")()
+		cfg := NewConfig("config_non_existent")
+		assert.Equal(t, "redis://pbc-redis-server:6379/2", cfg.Backend.Redis.URL)
+	})
+}
+
 func TestLogValidateAndLog(t *testing.T) {
 
 	// logrus entries will be recorded to this `hook` object so we can compare and assert them

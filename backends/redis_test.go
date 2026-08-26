@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
+	"github.com/prebid/prebid-cache/config"
 	"github.com/prebid/prebid-cache/utils"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
@@ -190,6 +192,106 @@ func TestRedisClientPut(t *testing.T) {
 			storage, ok := tt.in.redisClient.(FakeRedisClient)
 			assert.True(t, ok, tt.desc)
 			assert.Equal(t, tt.expected.writtenValue, storage.StoredData[tt.in.key], tt.desc)
+		}
+	}
+}
+
+func TestNewRedisOptions(t *testing.T) {
+	testCases := []struct {
+		desc          string
+		cfg           config.Redis
+		expectError   bool
+		expectedAddr  string
+		expectedPass  string
+		expectedDB    int
+		expectedPool  int
+		expectedTLS   bool
+		expectedInsec bool
+	}{
+		{
+			desc:         "URL only",
+			cfg:          config.Redis{URL: "redis://:mypass@myhost:6380/2"},
+			expectError:  false,
+			expectedAddr: "myhost:6380",
+			expectedPass: "mypass",
+			expectedDB:   2,
+		},
+		{
+			desc:         "URL with cfg overrides",
+			cfg:          config.Redis{URL: "redis://:mypass@myhost:6380/2", Host: "overridehost", Port: 6379, Password: "newpass", Db: 5, PoolSize: 10},
+			expectError:  false,
+			expectedAddr: "overridehost:6379",
+			expectedPass: "newpass",
+			expectedDB:   5,
+			expectedPool: 10,
+		},
+		{
+			desc:         "No URL, traditional config",
+			cfg:          config.Redis{Host: "localhost", Port: 6379, Password: "secret", Db: 1, PoolSize: 10},
+			expectError:  false,
+			expectedAddr: "localhost:6379",
+			expectedPass: "secret",
+			expectedDB:   1,
+			expectedPool: 10,
+		},
+		{
+			desc:        "Invalid URL",
+			cfg:         config.Redis{URL: "://invalid-url"},
+			expectError: true,
+		},
+		{
+			desc:          "TLS enabled",
+			cfg:           config.Redis{URL: "redis://myhost:6379", TLS: config.RedisTLS{Enabled: true, InsecureSkipVerify: true}},
+			expectError:   false,
+			expectedAddr:  "myhost:6379",
+			expectedTLS:   true,
+			expectedInsec: true,
+		},
+		{
+			desc:         "rediss scheme URL (TLS enabled via scheme)",
+			cfg:          config.Redis{URL: "rediss://:mypass@myhost:6379/0"},
+			expectError:  false,
+			expectedAddr: "myhost:6379",
+			expectedPass: "mypass",
+			expectedDB:   0,
+			expectedTLS:  true,
+		},
+		{
+			desc:          "rediss scheme URL with TLS config override (InsecureSkipVerify)",
+			cfg:           config.Redis{URL: "rediss://:mypass@myhost:6379/0", TLS: config.RedisTLS{Enabled: true, InsecureSkipVerify: true}},
+			expectError:   false,
+			expectedAddr:  "myhost:6379",
+			expectedPass:  "mypass",
+			expectedDB:    0,
+			expectedTLS:   true,
+			expectedInsec: true,
+		},
+	}
+
+	for _, tt := range testCases {
+		options, err := newRedisOptions(tt.cfg)
+		if tt.expectError {
+			assert.Error(t, err, tt.desc)
+			assert.Nil(t, options, tt.desc)
+		} else {
+			assert.NoError(t, err, tt.desc)
+			assert.NotNil(t, options, tt.desc)
+			assert.Equal(t, tt.expectedAddr, options.Addr, tt.desc)
+			assert.Equal(t, tt.expectedPass, options.Password, tt.desc)
+			assert.Equal(t, tt.expectedDB, options.DB, tt.desc)
+			if tt.expectedPool > 0 {
+				assert.Equal(t, tt.expectedPool, options.PoolSize, tt.desc)
+			}
+			assert.True(t, options.PoolFIFO, tt.desc)
+			assert.True(t, options.DisableIdentity, tt.desc)
+			assert.Equal(t, 1*time.Minute, options.ConnMaxLifetimeJitter, tt.desc)
+			assert.Equal(t, 1*time.Minute, options.ConnMaxIdleTime, tt.desc)
+			assert.Equal(t, 5*time.Minute, options.ConnMaxLifetime, tt.desc)
+
+			if tt.expectedTLS {
+				assert.NotNil(t, options.TLSConfig, tt.desc)
+				assert.Equal(t, tt.expectedInsec, options.TLSConfig.InsecureSkipVerify, tt.desc)
+			}
 		}
 	}
 }
