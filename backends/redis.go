@@ -3,6 +3,7 @@ package backends
 import (
 	"context"
 	"crypto/tls"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -47,6 +48,28 @@ type RedisBackend struct {
 
 // NewRedisBackend initializes the redis client and pings to make sure connection was successful
 func NewRedisBackend(cfg config.Redis, ctx context.Context) *RedisBackend {
+	if cfg.URL != "" {
+		options, err := redis.ParseURL(cfg.URL)
+		if err != nil {
+			log.Fatalf("Failed to parse REDIS_URL: %v", err)
+		}
+		u, err := url.Parse(cfg.URL)
+		if err != nil {
+			log.Fatalf("Failed to parse REDIS_URL hostname/port: %v", err)
+		}
+		cfg.Host = u.Hostname()
+		cfg.Port, _ = strconv.Atoi(u.Port())
+		cfg.Password = options.Password
+		cfg.Db = options.DB
+		if options.TLSConfig != nil {
+			cfg.TLS.Enabled = true
+			// support enforcing InsecureSkipVerify true from the env var
+			if cfg.TLS.InsecureSkipVerify == false {
+				cfg.TLS.InsecureSkipVerify = options.TLSConfig.InsecureSkipVerify
+			}
+		}
+	}
+
 	constr := cfg.Host + ":" + strconv.Itoa(cfg.Port)
 
 	options := &redis.Options{

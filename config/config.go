@@ -83,6 +83,7 @@ func setConfigDefaults(v *viper.Viper) {
 	v.SetDefault("backend.redis.dial_timeout_seconds", 8)
 	v.SetDefault("backend.redis.read_timeout_seconds", 2)
 	v.SetDefault("backend.redis.write_timeout_seconds", 5)
+	v.SetDefault("backend.redis.url", "")
 
 	v.SetDefault("backend.ignite.scheme", "")
 	v.SetDefault("backend.ignite.host", "")
@@ -126,6 +127,7 @@ func setEnvVarsLookup(v *viper.Viper) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.SetEnvPrefix("PBC")
 	v.AutomaticEnv()
+	v.BindEnv("backend.redis.url", "REDIS_URL")
 }
 
 type Configuration struct {
